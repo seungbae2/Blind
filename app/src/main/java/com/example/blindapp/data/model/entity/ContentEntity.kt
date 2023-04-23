@@ -8,7 +8,7 @@ import java.util.*
 @Entity
 data class ContentEntity(
     @PrimaryKey(false)
-    val id : Int,
+    val id: Int,
     @ColumnInfo
     var title: String,
     @ColumnInfo
@@ -19,6 +19,8 @@ data class ContentEntity(
     val createdDate: Date,
     @ColumnInfo
     val likeCount: Int,
+    @ColumnInfo
+    val commentCount: Int,
     @ColumnInfo
     val viewCount: Int,
 ) : java.io.Serializable
