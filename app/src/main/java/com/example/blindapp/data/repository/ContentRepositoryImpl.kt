@@ -18,9 +18,9 @@ class ContentRepositoryImpl @Inject constructor(
 ) : ContentRepository {
     override fun loadList(): Flow<List<Content>> {
         return flow {
-            contentDao.selectAll().collect { list ->
-                emit(list.map { it.toContent() })
-            }
+//            contentDao.selectAll().collect { list ->
+//                emit(list.map { it.toContent() })
+//            }
             emit(
                 try {
                     contentService.getList().data.map { it.toContent() }
@@ -47,6 +47,18 @@ class ContentRepositoryImpl @Inject constructor(
         return try {
             contentService.updateItem(item.toRequest())
             contentDao.insert(item.toEntity())
+            true
+        } catch (e: IOException) {
+            false
+        }
+    }
+
+    override suspend fun delete(item: Content): Boolean {
+        return try {
+            item.id?.let { id ->
+                contentService.deleteItem(id)
+            }
+            contentDao.delete(item.toEntity())
             true
         } catch (e: IOException) {
             false
