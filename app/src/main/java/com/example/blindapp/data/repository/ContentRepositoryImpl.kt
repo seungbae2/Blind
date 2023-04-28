@@ -18,25 +18,28 @@ class ContentRepositoryImpl @Inject constructor(
 ) : ContentRepository {
     override fun loadList(): Flow<List<Content>> {
         return flow {
-//            contentDao.selectAll().collect { list ->
-//                emit(list.map { it.toContent() })
-//            }
-            emit(
-                try {
-                    contentService.getList().data.map { it.toContent() }
-
-                } catch (e: IOException) {
-                    emptyList()
+            try {
+                contentService.getList().data.also { list ->
+                    contentDao.insertAll(list.map { it.toEntity() })
                 }
-            )
+            } finally {
+                contentDao.selectAll().collect { list ->
+                    emit(list.map { it.toContent() })
+                }
+            }
 
         }
     }
 
     override suspend fun save(item: Content): Boolean {
         return try {
-            contentService.saveItem(item.toRequest())
-            contentDao.insert(item.toEntity())
+            contentService.saveItem(item.toRequest()).also {
+                if (it.success) {
+                    it.data?.let { contentDto ->
+                        contentDao.insert(contentDto.toEntity())
+                    }
+                }
+            }
             true
         } catch (e: IOException) {
             false
@@ -45,8 +48,13 @@ class ContentRepositoryImpl @Inject constructor(
 
     override suspend fun update(item: Content): Boolean {
         return try {
-            contentService.updateItem(item.toRequest())
-            contentDao.insert(item.toEntity())
+            contentService.updateItem(item.toRequest()).also {
+                if (it.success) {
+                    it.data?.let { contentDto ->
+                        contentDao.insert(contentDto.toEntity())
+                    }
+                }
+            }
             true
         } catch (e: IOException) {
             false
@@ -56,9 +64,12 @@ class ContentRepositoryImpl @Inject constructor(
     override suspend fun delete(item: Content): Boolean {
         return try {
             item.id?.let { id ->
-                contentService.deleteItem(id)
+                contentService.deleteItem(id).also {
+                    if (it.success) {
+                        contentDao.delete(item.toEntity())
+                    }
+                }
             }
-            contentDao.delete(item.toEntity())
             true
         } catch (e: IOException) {
             false
